@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مبدل TTS (ذخیره API، دانلود و کپی)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: "Inter", sans-serif; }
+        .bg-animate {
+            background: linear-gradient(-45deg, #e0e7ff, #c7d2fe, #a5b4fc, #818cf8);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .loader {
+            border: 4px solid #E5E7EB; border-top: 4px solid #3B82F6;
+            border-radius: 50%; width: 30px; height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #history-container::-webkit-scrollbar { width: 8px; }
+        #history-container::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        #history-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.4); border-radius: 10px; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.35); backdrop-filter: blur(12px);
+            border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0.75rem; color: #1F2937;
+        }
+        .glass-input::placeholder { color: #4B5563; }
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.7); outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+        #status-message {
+            white-space: pre-line;
+            text-align: right;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="bg-animate min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="glass-card w-full max-w-lg p-6 space-y-6">
+        <h1 class="text-3xl font-bold text-center text-gray-800">
+            مبدل TTS پیشرفته
+        </h1>
+        <p class="text-center text-gray-700">
+            مدل: 
+            <code class="text-sm bg-white/30 p-1 rounded ltr">gemini-2.5-flash-preview-tts</code>
+        </p>
+
+        <!-- بخش 1: کلیدهای API -->
+        <div class="space-y-3">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                کلید(های) API (ذخیره خودکار):
+            </label>
+            <div id="api-key-list" class="space-y-2">
+                <!-- فیلدها به صورت داینامیک اضافه می‌شوند -->
+            </div>
+            <button id="add-key-button"
+                class="w-full p-2 rounded-lg bg-white/40 text-gray-700 hover:bg-white/60 font-medium transition-colors">
+                + افزودن کلید
+            </button>
+        </div>
+
+        <!-- بخش 2: پیکربندی -->
+        <div class="space-y-4">
+            <hr class="border-white/30">
+            <!-- انتخاب صدا (لیست کامل و فارسی) -->
+            <div>
+                <label for="voice-select" class="block text-sm font-medium text-gray-700 mb-2">صدا:</label>
+                <select id="voice-select" class="glass-input w-full p-3">
+                    <option value="Zephyr">Zephyr (روشن)</option>
+                    <option value="Puck">Puck (شاد)</option>
+                    <option value="Charon">Charon (راوی، آموزنده)</option>
+                    <option value="Kore">Kore (محکم، جدی)</option>
+                    <option value="Fenrir">Fenrir (پر هیجان)</option>
+                    <option value="Leda">Leda (جوان)</option>
+                    <option value="Orus">Orus (محکم)</option>
+                    <option value="Aoede">Aoede (آرام، ملایم)</option>
+                    <option value="Callirrhoe">Callirrhoe (راحت)</option>
+                    <option value="Autonoe">Autonoe (درخشان)</option>
+                    <option value="Enceladus">Enceladus (نفس‌دار)</option>
+                    <option value="Iapetus">Iapetus (واضح)</option>
+                    <option value="Umbriel">Umbriel (راحت)</option>
+                    <option value="Algieba">Algieba (روان، نرم)</option>
+                    <option value="Despina">Despina (روان)</option>
+                    <option value="Erinome">Erinome (شفاف)</option>
+                    <option value="Algenib">Algenib (خشن، گرفته)</option>
+                    <option value="Rasalgethi">Rasalgethi (آموزنده)</option>
+                    <option value="Laomedeia">Laomedeia (شاداب)</option>
+                    <option value="Achernar">Achernar (نرم)</option>
+                    <option value="Alnilam">Alnilam (قاطع)</option>
+                    <option value="Schedar">Schedar (یکنواخت)</option>
+                    <option value="Gacrux">Gacrux (بالغ)</option>
+                    <option value="Pulcherrima">Pulcherrima (رک، مستقیم)</option>
+                    <option value="Achird">Achird (دوستانه)</option>
+                    <option value="Zubenelgenubi">Zubenelgenubi (خودمانی)</option>
+                    <option value="Vindemiatrix">Vindemiatrix (نجیب، ملایم)</option>
+                    <option value="Sadachbia">Sadachbia (سرزنده)</option>
+                    <option value="Sadaltager">Sadaltager (دانا)</option>
+                    <option value="Sulafat">Sulafat (گرم)</option>
+                </select>
+            </div>
+
+            <!-- ورودی لحن -->
+            <div>
+                <label for="tone-input" class="block text-sm font-medium text-gray-700 mb-2">لحن صدا (اختیاری):</label>
+                <input type="text" id="tone-input" class="glass-input w-full p-3" placeholder="مثال: خوشحال، آرام، جدی...">
+            </div>
+
+            <!-- ورودی متن -->
+            <div>
+                <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">متن شما:</label>
+                <textarea id="text-input" rows="5" class="glass-input w-full p-3" placeholder="سلام، دنیا!"></textarea>
+            </div>
+
+            <button id="generate-button"
+                class="w-full p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-colors shadow-lg">
+                تولید صدا
+            </button>
+        </div>
+
+        <!-- بخش 3: نتایج -->
+        <div class="space-y-4">
+            <div id="loading-spinner" class="hidden flex justify-center items-center space-x-2 space-x-reverse">
+                <div class="loader"></div>
+                <span id="loading-message" class="text-gray-600">در حال پردازش...</span>
+            </div>
+            <p id="status-message" class="font-medium"></p>
+            <audio id="audio-player" controls class="w-full hidden mt-4"></audio>
+            <button id="main-download-button"
+               class="hidden w-full text-center p-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold transition-colors shadow-lg">
+                دانلود فایل WAV
+            </button>
+        </div>
+
+        <!-- بخش 4: تاریخچه -->
+        <div class="space-y-4">
+            <hr class="border-white/30">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">تاریخچه</h2>
+                <button id="clear-history-button"
+                        class="text-sm text-red-600 hover:text-red-500 font-medium">
+                    پاک کردن تاریخچه
+                </button>
+            </div>
+            <div id="history-container" class="space-y-3 p-3 rounded-lg bg-white/20 max-h-60 overflow-y-auto">
+                <!-- History items will be injected here by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال تأیید حذف -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card p-6 rounded-lg text-gray-800 max-w-sm w-full">
+            <h3 class="text-lg font-bold mb-4">تأیید حذف</h3>
+            <p class="mb-6">آیا از حذف این مورد مطمئن هستید؟</p>
+            <div class="flex justify-end space-x-2 space-x-reverse">
+                <button id="modal-cancel-button" class="px-4 py-2 bg-white/50 rounded-lg transition hover:bg-white/70">لغو</button>
+                <button id="modal-confirm-button" class="px-4 py-2 bg-red-600 text-white rounded-lg transition hover:bg-red-700">حذف کن</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+    // ------------------------------------
+    //
+    // JavaScript Logic
+    //
+    // ------------------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- DOM Elements ---
+        const apiKeyList = document.getElementById('api-key-list');
+        const addKeyButton = document.getElementById('add-key-button');
+        const voiceSelect = document.getElementById('voice-select');
+        const toneInput = document.getElementById('tone-input');
+        const textInput = document.getElementById('text-input');
+        const generateButton = document.getElementById('generate-button');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const loadingMessage = document.getElementById('loading-message');
+        const statusMessage = document.getElementById('status-message');
+        const audioPlayer = document.getElementById('audio-player');
+        const mainDownloadButton = document.getElementById('main-download-button');
+        const historyContainer = document.getElementById('history-container');
+        const clearHistoryButton = document.getElementById('clear-history-button');
+        const deleteModal = document.getElementById('delete-modal');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const modalConfirmButton = document.getElementById('modal-confirm-button');
+
+        // --- Global State ---
+        const ttsModel = "gemini-2.5-flash-preview-tts"; 
+        let apiKeys = [];
+        let currentKeyIndex = 0;
+        let history = [];
+        let speechErrorLog = [];
+        let itemIdToDelete = null; 
+        let mainAudioBlob = null; 
+
+        // --- SVG Icons ---
+        const eyeIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+        const eyeSlashIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+        const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+        const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+        // --- Event Listeners ---
+        addKeyButton.addEventListener('click', () => addApiKeyInput());
+        apiKeyList.addEventListener('click', handleApiKeyListEvents);
+        apiKeyList.addEventListener('input', saveApiKeys); // **جدید:** ذخیره خودکار هنگام تایپ
+        generateButton.addEventListener('click', generateSpeech);
+        clearHistoryButton.addEventListener('click', clearHistory);
+        mainDownloadButton.addEventListener('click', handleMainDownload);
+        historyContainer.addEventListener('click', handleHistoryEvents);
+        modalCancelButton.addEventListener('click', hideModal);
+        modalConfirmButton.addEventListener('click', confirmDelete);
+
+        // --- Initial setup ---
+        loadApiKeys();
+        loadHistory();
+
+        // --- Functions ---
+        
+        function loadApiKeys() {
+            const savedKeys = localStorage.getItem('ttsApiKeys');
+            if (savedKeys) {
+                const keys = JSON.parse(savedKeys);
+                if (keys.length > 0) {
+                    apiKeyList.innerHTML = '';
+                    keys.forEach(key => addApiKeyInput(key));
+                } else {
+                    addApiKeyInput();
+                }
+            } else {
+                addApiKeyInput();
+            }
+        }
+
+        function saveApiKeys() {
+            const keys = Array.from(apiKeyList.querySelectorAll('input'))
+                .map(input => input.value); // ذخیره همه مقادیر، حتی خالی
+            localStorage.setItem('ttsApiKeys', JSON.stringify(keys));
+        }
+
+        async function parseError(errorOrResponse) {
+            if (errorOrResponse instanceof Error) {
+                if (errorOrResponse.message.includes("Failed to fetch") || errorOrResponse.message.includes("Load failed")) {
+                    return `خطای شبکه (Load failed): \nاین خطا معمولاً به دلیل CORS یا فایروال/Ad-blocker است.\n1. افزونه‌های مرورگر را چک کنید.\n2. (اگر از localhost استفاده نمی‌کنید) فایل را روی یک وب سرور محلی اجرا کنید.`;
+                }
+                return `خطای جاوا اسکریپت: ${errorOrResponse.message}`;
+            }
+            let errorBody;
+            try {
+                errorBody = await errorOrResponse.json();
+            } catch (e) {
+                return `[${errorOrResponse.status}] ${errorOrResponse.statusText || 'خطای شبکه ناشناخته'}`;
+            }
+            const error = errorBody.error;
+            if (error) {
+                let details = '';
+                if (error.details && error.details.length > 0) {
+                     details = ` (جزئیات: ${error.details[0].reason || JSON.stringify(error.details[0])})`;
+                }
+                return `[${error.status || errorOrResponse.status}] ${error.message}${details}`;
+            }
+            return `[${errorOrResponse.status}] خطای ناشناخته از سرور`;
+        }
+
+        function addApiKeyInput(value = "") {
+            const keyCount = apiKeyList.children.length;
+            const keyInputWrapper = document.createElement('div');
+            keyInputWrapper.className = "flex items-center space-x-2 space-x-reverse";
+
+            const input = document.createElement('input');
+            input.type = "password";
+            input.className = "glass-input w-full p-3 ltr flex-1"; // flex-1 to grow
+            input.placeholder = `کلید API شماره ${keyCount + 1}`;
+            input.value = value;
+            
+            // Toggle Button
+            const toggleButton = document.createElement('button');
+            toggleButton.type = 'button';
+            toggleButton.className = "toggle-visibility-button p-2 rounded-lg text-gray-700 hover:bg-white/50 flex-shrink-0";
+            toggleButton.innerHTML = eyeIconSVG;
+
+            // Copy Button
+            const copyButton = document.createElement('button');
+            copyButton.type = 'button';
+            copyButton.className = "copy-key-button p-2 rounded-lg text-gray-700 hover:bg-white/50 flex-shrink-0";
+            copyButton.innerHTML = copyIconSVG;
+
+            // Remove Button
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = "remove-key-button p-2 bg-red-500 text-white rounded-lg text-sm transition-colors hover:bg-red-600 flex-shrink-0";
+            removeButton.textContent = "حذف";
+
+            keyInputWrapper.appendChild(input);
+            keyInputWrapper.appendChild(toggleButton);
+            keyInputWrapper.appendChild(copyButton);
+            keyInputWrapper.appendChild(removeButton);
+            
+            apiKeyList.appendChild(keyInputWrapper);
+        }
+
+        // **جدید:** مدیریت متمرکز رویدادهای لیست API
+        function handleApiKeyListEvents(e) {
+            const toggleButton = e.target.closest('.toggle-visibility-button');
+            const copyButton = e.target.closest('.copy-key-button');
+            const removeButton = e.target.closest('.remove-key-button');
+
+            if (toggleButton) {
+                handleToggleVisibility(toggleButton);
+            }
+            if (copyButton) {
+                handleCopyKey(copyButton);
+            }
+            if (removeButton) {
+                handleRemoveKey(removeButton);
+            }
+        }
+
+        function handleToggleVisibility(button) {
+            const input = button.parentElement.querySelector('input');
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.innerHTML = eyeSlashIconSVG;
+            } else {
+                input.type = 'password';
+                button.innerHTML = eyeIconSVG;
+            }
+        }
+
+        function handleCopyKey(button) {
+            const input = button.parentElement.querySelector('input');
+            const currentType = input.type;
+
+            // Must be 'text' to be selectable
+            input.type = 'text';
+            input.select();
+            input.setSelectionRange(0, 99999); // For mobile
+
+            try {
+                // استفاده از document.execCommand برای سازگاری بهتر با file://
+                document.execCommand('copy');
+                
+                // Visual feedback
+                button.innerHTML = checkIconSVG;
+                setTimeout(() => {
+                    button.innerHTML = copyIconSVG;
+                }, 2000);
+            } catch (err) {
+                console.error('خطا در کپی کردن:', err);
+            }
+
+            // Revert type
+            input.type = currentType;
+            // Deselect
+            if (window.getSelection) {
+                window.getSelection().removeAllRanges();
+            } else if (document.selection) {
+                document.selection.empty();
+            }
+            input.blur();
+        }
+
+
+        function handleRemoveKey(button) {
+            if (apiKeyList.children.length > 1) {
+                button.parentElement.remove();
+            } else {
+                button.parentElement.querySelector('input').value = '';
+            }
+            saveApiKeys(); // ذخیره تغییرات
+            // Re-number placeholders
+            apiKeyList.querySelectorAll('input').forEach((input, index) => {
+                input.placeholder = `کلید API شماره ${index + 1}`;
+            });
+        }
+
+        function generateSpeech() {
+            const text = textInput.value.trim();
+            if (!text) {
+                showStatus("لطفاً متنی را برای تبدیل وارد کنید.", true);
+                return;
+            }
+            
+            saveApiKeys(); // ذخیره کلیدها قبل از تولید
+            
+            apiKeys = Array.from(apiKeyList.querySelectorAll('input'))
+                .map(input => input.value.trim())
+                .filter(key => key.length > 0);
+
+            if (apiKeys.length === 0) {
+                 showStatus("خطا: لطفاً حداقل یک کلید API معتبر وارد کنید.", true);
+                 return;
+            }
+
+            currentKeyIndex = 0; 
+            speechErrorLog = []; 
+            setLoading(true, `در حال تولید صدا (کلید 1 از ${apiKeys.length})...`);
+            showStatus("");
+            audioPlayer.classList.add('hidden');
+            mainDownloadButton.classList.add('hidden');
+            mainAudioBlob = null;
+
+            tryGenerateSpeechWithKeyRotation();
+        }
+
+        async function tryGenerateSpeechWithKeyRotation() {
+            if (currentKeyIndex >= apiKeys.length) {
+                setLoading(false);
+                let finalError = "خطا: تولید صدا با تمام کلیدها شکست خورد:\n" + speechErrorLog.join('\n\n');
+                showStatus(finalError, true);
+                return;
+            }
+
+            const apiKey = apiKeys[currentKeyIndex];
+            const selectedVoice = voiceSelect.value;
+            const tone = toneInput.value.trim();
+            const text = textInput.value.trim();
+            
+            let promptText = text;
+            if (tone) {
+                promptText = `Say in a ${tone} style: ${text}`;
+            }
+            
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel}:generateContent?key=${apiKey}`;
+            const payload = {
+                "contents": [{"parts": [{ "text": promptText }]}],
+                "generationConfig": {
+                    "responseModalities": ["AUDIO"],
+                    "speechConfig": {"voiceConfig": { "prebuiltVoiceConfig": { "voiceName": selectedVoice }}}
+                },
+                "model": ttsModel
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    referrerPolicy: "no-referrer"
+                });
+
+                if (!response.ok) throw response; 
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    if (!sampleRateMatch) throw new Error("Sample rate (نرخ نمونه) در پاسخ یافت نشد.");
+                    
+                    const sampleRate = parseInt(sampleRateMatch[1], 10);
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    mainAudioBlob = wavBlob; 
+
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.classList.remove('hidden');
+                    
+                    mainDownloadButton.classList.remove('hidden');
+                    
+                    showStatus("صوت با موفقیت ایجاد شد.", false);
+                    saveToHistory(text, selectedVoice, tone, wavBlob);
+                    
+                } else {
+                    throw new Error("پاسخ API معتبر بود اما داده صوتی نداشت.");
+                }
+                
+                setLoading(false);
+
+            } catch (error) {
+                const errorMessage = await parseError(error);
+                speechErrorLog.push(`کلید ${currentKeyIndex + 1} (${apiKey.substring(0, 4)}...): ${errorMessage}`);
+                currentKeyIndex++;
+                
+                if (currentKeyIndex < apiKeys.length) {
+                    setLoading(true, `کلید قبلی ناموفق بود. در حال تلاش با کلید ${currentKeyIndex + 1} از ${apiKeys.length}...`);
+                    await tryGenerateSpeechWithKeyRotation();
+                } else {
+                   setLoading(false);
+                   let finalError = "خطا: تولید صدا با تمام کلیدها شکست خورد:\n" + speechErrorLog.join('\n\n');
+                   showStatus(finalError, true);
+                }
+            }
+        }
+
+        // --- History and Modal Functions ---
+
+        function saveToHistory(text, voice, tone, wavBlob) {
+            const reader = new FileReader();
+            reader.readAsDataURL(wavBlob);
+            reader.onloadend = () => {
+                const base64data = reader.result; 
+                const historyItem = {
+                    id: Date.now(), text, voice,
+                    tone: tone || "طبیعی",
+                    dataUrl: base64data 
+                };
+                history.unshift(historyItem);
+                localStorage.setItem('ttsHistory', JSON.stringify(history));
+                renderHistory();
+            };
+            reader.onerror = () => {
+                 console.error("خطا در خواندن Blob برای ذخیره در تاریخچه");
+            };
+        }
+
+        function loadHistory() {
+            try {
+                const storedHistory = localStorage.getItem('ttsHistory');
+                if (storedHistory) {
+                    history = JSON.parse(storedHistory);
+                    renderHistory();
+                }
+            } catch (e) {
+                console.error("خطا در بارگذاری تاریخچه:", e);
+                localStorage.removeItem('ttsHistory'); 
+            }
+        }
+
+        function renderHistory() {
+            historyContainer.innerHTML = "";
+            if (history.length === 0) {
+                historyContainer.innerHTML = `<p class="text-gray-600 text-center">تاریخچه خالی است.</p>`;
+                return;
+            }
+            history.forEach(item => {
+                if (!item || !item.dataUrl) return; 
+                const itemEl = document.createElement('div');
+                itemEl.className = "glass-card p-3 space-y-2";
+                
+                const voiceName = voiceSelect.querySelector(`option[value="${item.voice}"]`)?.textContent || item.voice;
+
+                itemEl.innerHTML = `
+                    <p class="text-gray-800 truncate" title="${item.text}"><strong>متن:</strong> ${item.text}</p>
+                    <p class="text-sm text-gray-700"><strong>صدا:</strong> ${voiceName} | <strong>لحن:</strong> ${item.tone}</p>
+                    <audio controls class="w-full" src="${item.dataUrl}"></audio>
+                    <div class="flex space-x-2 space-x-reverse">
+                        <button data-url="${item.dataUrl}" data-filename="history_${item.id}.wav"
+                           class="download-button flex-1 text-center p-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+                            دانلود WAV
+                        </button>
+                        <button data-id="${item.id}"
+                           class="delete-item-button flex-1 p-2 text-sm rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors">
+                            حذف
+                        </button>
+                    </div>
+                `;
+                historyContainer.appendChild(itemEl);
+            });
+        }
+
+        function clearHistory() {
+            itemIdToDelete = 'ALL';
+            showModal("آیا از حذف *تمام* موارد تاریخچه مطمئن هستید؟");
+        }
+
+        function handleHistoryEvents(e) {
+            const target = e.target.closest('button'); // پیدا کردن نزدیک‌ترین دکمه
+            if (!target) return;
+
+            if (target.classList.contains('delete-item-button')) {
+                itemIdToDelete = target.dataset.id;
+                showModal("آیا از حذف این مورد از تاریخچه مطمئن هستید؟");
+            }
+            if (target.classList.contains('download-button')) {
+                const dataUrl = target.dataset.url;
+                const filename = target.dataset.filename;
+                const blob = dataUrlToBlob(dataUrl); 
+                forceDownload(blob, filename); 
+            }
+        }
+
+        function handleMainDownload() {
+            if (mainAudioBlob) {
+                forceDownload(mainAudioBlob, `tts_output_${Date.now()}.wav`);
+            }
+        }
+
+        function forceDownload(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function dataUrlToBlob(dataUrl) {
+            const parts = dataUrl.split(',');
+            const mimeType = parts[0].match(/:(.*?);/)[1];
+            const b64Data = parts[1];
+            const binaryString = window.atob(b64Data);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return new Blob([bytes], { type: mimeType });
+        }
+
+
+        function showModal(message = "آیا از حذف این مورد مطمئن هستید؟") {
+            deleteModal.querySelector('p').textContent = message;
+            deleteModal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            deleteModal.classList.add('hidden');
+            itemIdToDelete = null;
+        }
+
+        function confirmDelete() {
+            if (itemIdToDelete === 'ALL') {
+                history = [];
+                localStorage.removeItem('ttsHistory');
+            } else if (itemIdToDelete) {
+                history = history.filter(item => item.id.toString() !== itemIdToDelete);
+                localStorage.setItem('ttsHistory', JSON.stringify(history));
+            }
+            renderHistory();
+            hideModal();
+        }
+
+        // --- Utility Functions ---
+
+        function setLoading(isLoading, message = "در حال پردازش...") {
+            if (isLoading) {
+                loadingSpinner.classList.remove('hidden');
+                loadingMessage.textContent = message;
+                generateButton.disabled = true;
+            } else {
+                loadingSpinner.classList.add('hidden');
+                generateButton.disabled = false;
+            }
+        }
+
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = isError 
+                ? "font-medium text-red-600" 
+                : "font-medium text-green-700";
+        }
+
+        // ------------------------------------
+        // Audio Utility Functions (PCM to WAV)
+        // ------------------------------------
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1, bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+            const blockAlign = numChannels * (bitsPerSample / 8);
+            const dataSize = pcmData.length * (bitsPerSample / 8);
+            const wavHeaderSize = 44;
+            const buffer = new ArrayBuffer(wavHeaderSize + dataSize);
+            const view = new DataView(buffer);
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+            let offset = 44;
+            for (let i = 0; i < pcmData.length; i++, offset += 2) {
+                view.setInt16(offset, pcmData[i], true);
+            }
+            return new Blob([view], { type: 'audio/wav' });
+        }
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+    });
+    </script>
+</body>
+</html>
+
